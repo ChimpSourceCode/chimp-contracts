@@ -94,12 +94,12 @@ contract ChimpAuction is Ownable {
 
         require(!tokensClaimed[msg.sender], "Already Claimed");
 
-        uint256 totalChimpsToBeClaimed = chimpPrice *
-            participations[msg.sender];
+        uint256 totalChimpsToBeClaimed = (participations[msg.sender] * 1e18) /
+            chimpPrice;
 
         CHIMP_TOKEN.safeTransfer(msg.sender, totalChimpsToBeClaimed);
         tokensClaimed[msg.sender] = true;
-        
+
         emit onClaimed(totalChimpsToBeClaimed);
     }
 }
