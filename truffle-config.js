@@ -18,12 +18,17 @@
  *
  */
 
-// const HDWalletProvider = require('@truffle/hdwallet-provider');
-//
+
 // const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+const mnemonic = "4a2d87620f476b70f8c563a210f72e216ce62c82e3d33527ad780e3193500774"
+const HDWalletProvider = require('truffle-hdwallet-provider');
 
 module.exports = {
+  api_keys: {
+    bscscan: 'WR3S16FRKR2WGQQ4B8K8DFQ2SYU2HII9CY',
+  },
+  plugins: ['truffle-plugin-verify'],
+
   /**
    * Networks define how you connect to your ethereum client and let you set the
    * defaults web3 uses to send transactions. If you don't specify one truffle
@@ -46,6 +51,15 @@ module.exports = {
     //  port: 8545,            // Standard Ethereum port (default: none)
     //  network_id: "*",       // Any network (default: none)
     // },
+
+    bsctest: {
+      provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s2.binance.org:8545`),
+      network_id: 97,
+      confirmations: 2,
+      skipDryRun: true,
+
+     },
+
     // Another network with more advanced options...
     // advanced: {
     // port: 8777,             // Custom port

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ChimpAuction is Ownable {
+contract ChimpPublicSale is Ownable {
     using SafeERC20 for IERC20;
 
     bool public isDepositEnabled;
@@ -16,18 +16,20 @@ contract ChimpAuction is Ownable {
     bytes32 public whiteListRoot;
 
     uint256 public chimpPrice;
-    IERC20 public immutable DEPOSIT_TOKEN;
     IERC20 public immutable CHIMP_TOKEN;
 
     mapping(address => uint256) public participations;
-    mapping(address => bool) public tokensClaimed;
 
-    event onDeposit(uint256 amount);
+    mapping(address => uint256) public tokensToBeClaimed;
+
+    event onDeposit(uint256 ethAmount, uint256 chimpAmount);
     event onClaimed(uint256 amount);
 
-    constructor(IERC20 _DEPOSIT_TOKEN, IERC20 _CHIMP_TOKEN) {
-        DEPOSIT_TOKEN = _DEPOSIT_TOKEN;
+    constructor(IERC20 _CHIMP_TOKEN,uint256 price,uint256 _maxPurchaseLimit) {
         CHIMP_TOKEN = _CHIMP_TOKEN;
+        chimpPrice = price;
+        maxPurchaseAmount = _maxPurchaseLimit;
+        
     }
 
     function flipDepositState() public onlyOwner {
@@ -46,7 +48,7 @@ contract ChimpAuction is Ownable {
         chimpPrice = amount;
     }
 
-    function deposit(uint256 amount, bytes32[] calldata _merkleProof) public {
+    function deposit(bytes32[] calldata _merkleProof) public payable {
         require(isDepositEnabled, "Deposit not enabled");
 
         require(
@@ -54,15 +56,16 @@ contract ChimpAuction is Ownable {
             "You are not whitelisted"
         );
 
+        uint256 chimpAmount = (msg.value * 1e18) / chimpPrice;
+
         require(
-            amount <= maxPurchaseAmount,
+            tokensToBeClaimed[msg.sender] + chimpAmount <= maxPurchaseAmount,
             "Can't buy more than max purchase limit amount"
         );
 
-        DEPOSIT_TOKEN.safeTransferFrom(msg.sender, address(this), amount);
-
-        participations[msg.sender] += amount;
-        emit onDeposit(amount);
+        participations[msg.sender] += msg.value;
+        tokensToBeClaimed[msg.sender] += chimpAmount;
+        emit onDeposit(msg.value, chimpAmount);
     }
 
     function withdrawETH(uint256 amount) public onlyOwner {
@@ -87,18 +90,11 @@ contract ChimpAuction is Ownable {
 
     function claimTokens() public {
         require(isClaimEnabled, "Claim not enabled");
-        require(
-            participations[msg.sender] > 0,
-            "Participation amount should be more than zero"
-        );
+        require(tokensToBeClaimed[msg.sender] > 0, "Already Claimed");
 
-        require(!tokensClaimed[msg.sender], "Already Claimed");
-
-        uint256 totalChimpsToBeClaimed = (participations[msg.sender] * 1e18) /
-            chimpPrice;
-
+        uint256 totalChimpsToBeClaimed = tokensToBeClaimed[msg.sender];
+        tokensToBeClaimed[msg.sender] = 0;
         CHIMP_TOKEN.safeTransfer(msg.sender, totalChimpsToBeClaimed);
-        tokensClaimed[msg.sender] = true;
 
         emit onClaimed(totalChimpsToBeClaimed);
     }

@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract ChimpAuction is Ownable {
     
-    bool public isAuctionEnabled;
+    bool public isAuctionEnabled ;
     bool public isClaimRefundEnabled;
-
     uint256 public minBidAmount;
     bytes32 public refundMerkleRoot;
+
+    uint256 public totalBidders;
 
     mapping(address => uint256) public bids;
     mapping(address => bool) public refundClaimed;
@@ -39,6 +40,10 @@ contract ChimpAuction is Ownable {
         );
         require(isAuctionEnabled, "Bid Placement not enabled");
         totalBids += 1;
+        if(bids[msg.sender]==0){
+            totalBidders +=1;
+        }
+      
         bids[msg.sender] += msg.value;
         emit onBidPlaced(msg.value);
     }
